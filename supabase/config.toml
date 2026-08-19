@@ -1,0 +1,104 @@
+project_id = "vpexxhfpvghlejljwpvt"
+
+[functions.github-roadmap]
+verify_jwt = false
+
+[functions.create-github-issue]
+verify_jwt = false
+
+[functions.ember-dandiset-sync]
+verify_jwt = false
+
+[functions.nih-grants]
+verify_jwt = false
+
+[functions.import-grant-publications]
+verify_jwt = false
+
+[functions.bbqs-api]
+verify_jwt = false
+
+[functions.bbqs-mcp]
+verify_jwt = false
+
+[functions.resolve-scholar-ids]
+verify_jwt = false
+
+[functions.discovery-chat]
+verify_jwt = false
+
+[functions.metadata-suggest]
+verify_jwt = false
+
+[functions.seed-metadata]
+verify_jwt = false
+
+[functions.suggest-related]
+verify_jwt = false
+
+[functions.gap-analysis]
+verify_jwt = false
+
+[functions.normalize-tags]
+verify_jwt = false
+
+[functions.metadata-chat]
+verify_jwt = false
+
+[functions.paper-extract]
+verify_jwt = false
+
+[functions.globus-auth]
+verify_jwt = false
+
+[functions.notify-access-request]
+verify_jwt = false
+
+[functions.embed-knowledge]
+verify_jwt = false
+
+[functions.sync-member-groups]
+verify_jwt = false
+
+[functions.analytics-summary]
+verify_jwt = false
+
+
+[functions.metadata-validate]
+verify_jwt = false
+
+[functions.elevenlabs-conversation-token]
+verify_jwt = false
+
+[functions.state-privacy-scan]
+verify_jwt = false
+
+[functions.verify-affiliations]
+verify_jwt = false
+
+[functions.auth-notify]
+verify_jwt = false
+
+[functions.security-audit]
+verify_jwt = false
+
+[functions.assistant-router]
+verify_jwt = false
+
+[functions.harvester-tick]
+verify_jwt = false
+
+[functions.personality-score-worker]
+verify_jwt = false
+
+[functions.interactional-terms]
+verify_jwt = false
+
+[functions.cohort-mental-model-summary]
+verify_jwt = false
+
+[functions.relational-cohesion]
+verify_jwt = false
+
+[functions.device-knowledge-seed]
+verify_jwt = false

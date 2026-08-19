@@ -1,0 +1,162 @@
+import { useState, useCallback, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { useEditHistory } from "@/hooks/useEditHistory";
+import { recordCurationAudit, showUndoableToast } from "@/lib/curation-audit";
+
+export interface MetadataChanges {
+  [fieldKey: string]: any;
+}
+
+interface UseMetadataEditorOptions {
+  grantNumber: string;
+  grantId: string;
+  originalMetadata: Record<string, any> | null;
+  onCommitSuccess?: () => void;
+}
+
+export function useMetadataEditor({ grantNumber, grantId, originalMetadata, onCommitSuccess }: UseMetadataEditorOptions) {
+  const [changes, setChanges] = useState<MetadataChanges>({});
+  const [isCommitting, setIsCommitting] = useState(false);
+  const { history: editHistory, isLoading: historyLoading, logChanges } = useEditHistory(grantNumber);
+
+  const hasChanges = Object.keys(changes).length > 0;
+
+  const changedFields = useMemo(() => new Set(Object.keys(changes)), [changes]);
+
+  const getValue = useCallback((fieldKey: string) => {
+    if (fieldKey in changes) return changes[fieldKey];
+    if (originalMetadata && fieldKey in originalMetadata) return originalMetadata[fieldKey];
+    // defaults
+    const arrayFields = [
+      "study_species", "use_approaches", "use_sensors", "produce_data_modality",
+      "produce_data_type", "use_analysis_types", "use_analysis_method",
+      "develope_software_type", "develope_hardware_type", "keywords",
+    ];
+    if (arrayFields.includes(fieldKey)) return [];
+    if (fieldKey === "study_human") return false;
+    if (fieldKey === "website") return "";
+    return null;
+  }, [changes, originalMetadata]);
+
+  const setFieldValue = useCallback((fieldKey: string, value: any) => {
+    // Check if value matches original — if so, remove the change
+    const original = originalMetadata?.[fieldKey];
+    const isEqual = JSON.stringify(value) === JSON.stringify(original);
+    setChanges(prev => {
+      if (isEqual) {
+        const next = { ...prev };
+        delete next[fieldKey];
+        return next;
+      }
+      return { ...prev, [fieldKey]: value };
+    });
+  }, [originalMetadata]);
+
+  const discardAll = useCallback(() => {
+    setChanges({});
+  }, []);
+
+  const commitChanges = useCallback(async () => {
+    if (!hasChanges) return;
+    setIsCommitting(true);
+    try {
+      // Fields that stay as top-level columns
+      const TOP_LEVEL = new Set(["study_species", "study_human", "keywords", "website"]);
+      
+      // Split changes into top-level and metadata JSONB
+      const topLevel: Record<string, any> = {};
+      const metaChanges: Record<string, any> = {};
+      for (const [key, val] of Object.entries(changes)) {
+        if (TOP_LEVEL.has(key)) {
+          topLevel[key] = val;
+        } else {
+          metaChanges[key] = val;
+        }
+      }
+
+      // Build the row to upsert
+      const row: Record<string, any> = {
+        grant_number: grantNumber,
+        grant_id: grantId,
+        last_edited_by: "anonymous",
+        ...topLevel,
+      };
+
+      // Merge metadata JSONB
+      if (Object.keys(metaChanges).length > 0) {
+        const existingMeta = (originalMetadata as any)?._metadata || {};
+        row.metadata = { ...existingMeta, ...metaChanges };
+      }
+
+      // Calculate completeness
+      const merged = { ...(originalMetadata || {}), ...changes };
+      const checkFields = [
+        "study_species", "use_approaches", "use_sensors", "produce_data_modality",
+        "produce_data_type", "use_analysis_types", "use_analysis_method",
+        "develope_software_type", "develope_hardware_type", "keywords", "website",
+      ];
+      const filled = checkFields.filter(f => {
+        const v = merged[f];
+        if (Array.isArray(v)) return v.length > 0;
+        if (typeof v === "string") return v.trim().length > 0;
+        return v !== null && v !== undefined;
+      });
+      row.metadata_completeness = Math.round((filled.length / checkFields.length) * 100);
+
+      const { error } = await (supabase
+        .from("projects" as any) as any)
+        .update(row)
+        .eq("grant_number", grantNumber);
+      if (error) throw error;
+
+      // Log field-level diffs to edit_history
+      await logChanges(null, changes, originalMetadata);
+
+      // Write per-field audit rows so each one can be reverted individually
+      const auditIds: string[] = [];
+      for (const [field, newVal] of Object.entries(changes)) {
+        const id = await recordCurationAudit({
+          entity_type: "project_metadata",
+          action: "update",
+          field_name: field,
+          grant_number: grantNumber,
+          before_value: originalMetadata?.[field] ?? null,
+          after_value: newVal,
+          source: "manual_editor",
+        });
+        if (id) auditIds.push(id);
+      }
+
+      // Use the most recent (last) audit id for the inline Undo affordance.
+      // Reverting the last edit is the common "oops" case; older ones are
+      // available via Data Provenance.
+      showUndoableToast({
+        title: "Changes committed",
+        description: `${Object.keys(changes).length} field(s) updated.`,
+        auditId: auditIds[auditIds.length - 1] ?? null,
+        onReverted: () => onCommitSuccess?.(),
+      });
+      setChanges({});
+      onCommitSuccess?.();
+    } catch (e: any) {
+      console.error("Commit error:", e);
+      toast({ title: "Error saving", description: e.message, variant: "destructive" });
+    } finally {
+      setIsCommitting(false);
+    }
+  }, [changes, hasChanges, grantNumber, grantId, originalMetadata, onCommitSuccess]);
+
+  return {
+    changes,
+    hasChanges,
+    changedFields,
+    getValue,
+    setFieldValue,
+    discardAll,
+    commitChanges,
+    isCommitting,
+    editHistory,
+    historyLoading,
+  };
+}

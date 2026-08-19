@@ -1,0 +1,73 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { pi_profile_id, first_name, last_name } = await req.json();
+
+    // Input validation
+    if (pi_profile_id && (typeof pi_profile_id !== "number" || pi_profile_id < 0 || pi_profile_id > 99999999)) {
+      return new Response(JSON.stringify({ error: "Invalid pi_profile_id" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (first_name && (typeof first_name !== "string" || first_name.length > 100 || !/^[A-Za-z\s.\-']+$/.test(first_name))) {
+      return new Response(JSON.stringify({ error: "Invalid first_name" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (last_name && (typeof last_name !== "string" || last_name.length > 100 || !/^[A-Za-z\s.\-']+$/.test(last_name))) {
+      return new Response(JSON.stringify({ error: "Invalid last_name" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    let criteria: Record<string, unknown>;
+    if (first_name && last_name) {
+      criteria = {
+        pi_names: [{ first_name, last_name, any_name: "" }],
+      };
+    } else if (pi_profile_id) {
+      criteria = { pi_profile_ids: [pi_profile_id] };
+    } else {
+      return new Response(JSON.stringify({ error: "first_name+last_name or pi_profile_id required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const res = await fetch("https://api.reporter.nih.gov/v2/projects/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ criteria, offset: 0, limit: 1 }),
+    });
+
+    const json = await res.json();
+    const searchId = json?.meta?.search_id;
+
+    if (searchId) {
+      return new Response(
+        JSON.stringify({ url: `https://reporter.nih.gov/search/${searchId}/projects` }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response(JSON.stringify({ error: "No search_id returned" }), {
+      status: 502,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});

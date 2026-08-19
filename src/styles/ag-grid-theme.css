@@ -1,0 +1,189 @@
+/* Bluevine-inspired AG Grid Theme Override */
+.ag-theme-alpine {
+  --ag-background-color: hsl(0 0% 100%);
+  --ag-foreground-color: hsl(222 47% 15%);
+  --ag-header-background-color: hsl(229 50% 15%);
+  --ag-header-foreground-color: hsl(0 0% 100%);
+  --ag-odd-row-background-color: hsl(220 20% 98%);
+  --ag-row-hover-color: hsl(220 15% 95%);
+  --ag-selected-row-background-color: hsl(38 90% 95%);
+  --ag-range-selection-border-color: hsl(38 90% 50%);
+  --ag-border-color: hsl(220 15% 88%);
+  --ag-secondary-border-color: hsl(220 15% 92%);
+  --ag-header-cell-hover-background-color: hsl(229 45% 22%);
+  --ag-header-cell-moving-background-color: hsl(229 45% 25%);
+  --ag-input-focus-border-color: hsl(38 90% 50%);
+  --ag-checkbox-checked-color: hsl(38 90% 50%);
+  --ag-range-selection-background-color: hsla(38, 90%, 50%, 0.1);
+  --ag-font-family: inherit;
+  --ag-font-size: 13px;
+  --ag-row-height: 36px;
+  --ag-header-height: 40px;
+  --ag-cell-horizontal-padding: 12px;
+}
+
+.ag-theme-alpine .ag-header {
+  border-bottom: 2px solid hsl(229 50% 12%);
+}
+
+.ag-theme-alpine .ag-header-cell {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+/* Sort icons always visible */
+.ag-theme-alpine .ag-header-cell .ag-sort-indicator-icon {
+  opacity: 0.4;
+}
+
+.ag-theme-alpine .ag-header-cell .ag-sort-ascending-icon,
+.ag-theme-alpine .ag-header-cell .ag-sort-descending-icon {
+  opacity: 1;
+}
+
+.ag-theme-alpine .ag-header-icon .ag-icon {
+  color: hsl(0 0% 100%);
+}
+
+.ag-theme-alpine .ag-header-cell:hover .ag-sort-indicator-icon {
+  opacity: 0.8;
+}
+
+.ag-theme-alpine .ag-row {
+  border-bottom-color: hsl(220 15% 92%);
+}
+
+.ag-theme-alpine .ag-cell {
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  overflow: visible;
+}
+
+.ag-theme-alpine .ag-cell-wrapper,
+.ag-theme-alpine .ag-cell-value {
+  overflow: visible;
+  pointer-events: auto;
+}
+
+.ag-theme-alpine .ag-row {
+  overflow: visible;
+  border-bottom-color: hsl(220 15% 92%);
+  z-index: 1;
+}
+
+.ag-theme-alpine .ag-row:hover {
+  z-index: 2;
+}
+
+.ag-theme-alpine .ag-body-viewport,
+.ag-theme-alpine .ag-center-cols-viewport,
+.ag-theme-alpine .ag-center-cols-container {
+  overflow: visible;
+}
+
+.ag-theme-alpine .ag-paging-panel {
+  background-color: hsl(220 20% 97%);
+  border-top: 1px solid hsl(220 15% 88%);
+}
+
+.ag-theme-alpine .ag-filter-toolpanel-header,
+.ag-theme-alpine .ag-filter-toolpanel-search {
+  background-color: hsl(220 20% 97%);
+}
+
+.ag-theme-alpine input[type="text"],
+.ag-theme-alpine input[type="number"] {
+  border-radius: 4px;
+}
+
+.ag-theme-alpine .ag-menu {
+  background-color: hsl(0 0% 100%);
+  border: 1px solid hsl(220 15% 88%);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px hsla(222, 47%, 15%, 0.15);
+}
+
+.ag-theme-alpine .ag-popup-child {
+  border-radius: 8px;
+}
+
+/* Ensure hovercards/popovers appear above AG Grid */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+/* ── Mobile-friendly AG Grid ── */
+@media (max-width: 768px) {
+  .ag-theme-alpine {
+    --ag-font-size: 12px;
+    --ag-row-height: 40px;
+    --ag-header-height: 36px;
+    --ag-cell-horizontal-padding: 8px;
+  }
+
+  /* Allow horizontal scrolling in a wrapper */
+  .ag-grid-mobile-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+
+  .ag-grid-mobile-wrapper > div {
+    min-width: 600px;
+  }
+
+  .ag-theme-alpine .ag-header-cell {
+    font-size: 10px;
+    letter-spacing: 0.3px;
+  }
+
+  .ag-theme-alpine .ag-paging-panel {
+    font-size: 11px;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+    padding: 6px 8px;
+  }
+}
+
+/* ── Dark mode overrides ── */
+.dark .ag-theme-alpine {
+  --ag-background-color: hsl(229 40% 12%);
+  --ag-foreground-color: hsl(220 20% 90%);
+  --ag-header-background-color: hsl(229 50% 8%);
+  --ag-header-foreground-color: hsl(220 20% 95%);
+  --ag-odd-row-background-color: hsl(229 35% 15%);
+  --ag-row-hover-color: hsl(229 35% 20%);
+  --ag-selected-row-background-color: hsla(38, 90%, 50%, 0.18);
+  --ag-border-color: hsl(229 30% 22%);
+  --ag-secondary-border-color: hsl(229 30% 18%);
+  --ag-header-cell-hover-background-color: hsl(229 45% 14%);
+  --ag-header-cell-moving-background-color: hsl(229 45% 18%);
+  --ag-control-panel-background-color: hsl(229 40% 12%);
+  --ag-subheader-background-color: hsl(229 40% 14%);
+  --ag-disabled-foreground-color: hsl(220 10% 55%);
+  --ag-input-border-color: hsl(229 30% 25%);
+  --ag-input-background-color: hsl(229 35% 16%);
+}
+
+.dark .ag-theme-alpine .ag-row {
+  border-bottom-color: hsl(229 30% 20%);
+}
+
+.dark .ag-theme-alpine .ag-paging-panel,
+.dark .ag-theme-alpine .ag-filter-toolpanel-header,
+.dark .ag-theme-alpine .ag-filter-toolpanel-search {
+  background-color: hsl(229 40% 12%);
+  color: hsl(220 20% 90%);
+  border-top-color: hsl(229 30% 22%);
+}
+
+.dark .ag-theme-alpine .ag-menu {
+  background-color: hsl(229 40% 14%);
+  border-color: hsl(229 30% 22%);
+  color: hsl(220 20% 90%);
+  box-shadow: 0 4px 12px hsla(0, 0%, 0%, 0.5);
+}

@@ -1,0 +1,243 @@
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { LogIn, LogOut, PanelLeftClose, X, ChevronDown, ChevronRight } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserTier } from "@/hooks/useUserTier";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import bbqsLogoIcon from "@/assets/bbqs-logo-icon.png";
+import { sidebarGroups } from "@/data/sidebar-config";
+import { ThemeToggle } from "@/components/ThemeToggle";
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+
+import type { NavItem } from "@/data/sidebar-config";
+
+export function AppSidebar() {
+  const { state, isMobile, setOpenMobile, toggleSidebar } = useSidebar();
+  const collapsed = state === "collapsed";
+  const location = useLocation();
+  const currentPath = location.pathname;
+  const { user, signOut, loading } = useAuth();
+  const { isAdmin, isCurator } = useUserTier();
+  // Admin section is visible to both admins (tier 1) and curators (tier 2)
+  const canSeeAdmin = isAdmin || isCurator;
+
+  const isActive = (path: string) => currentPath === path;
+
+  const handleNavClick = () => {
+    if (isMobile) setOpenMobile(false);
+  };
+
+  const renderMenuItems = (items: NavItem[]) => (
+    <SidebarMenu>
+      {items.filter((item) => !item.adminOnly || canSeeAdmin).map((item) => {
+        const locked = item.authRequired && !user;
+
+        if (item.disabled || locked) {
+          const btn = (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton
+                tooltip={collapsed ? (locked ? "Please sign in to view this page" : `${item.title} (coming soon)`) : undefined}
+                className="py-3 text-base opacity-40 cursor-pointer"
+                onClick={locked ? () => {
+                  handleNavClick();
+                  window.location.href = "/auth";
+                } : undefined}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="text-base">{item.title}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          );
+
+          if (!collapsed && locked) {
+            return (
+              <Tooltip key={item.title}>
+                <TooltipTrigger asChild>{btn}</TooltipTrigger>
+                <TooltipContent side="right">Please sign in to view this page</TooltipContent>
+              </Tooltip>
+            );
+          }
+
+          return btn;
+        }
+
+        return (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton
+              asChild
+              isActive={isActive(item.url)}
+              tooltip={collapsed ? item.title : undefined}
+              className="py-3 text-base hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+            >
+              {item.url.startsWith("/") ? (
+                <Link to={item.url} onClick={handleNavClick}>
+                  <item.icon className="h-5 w-5" />
+                  <span className="text-base">{item.title}</span>
+                  {item.children && item.children.length > 0 && (
+                    currentPath.startsWith(item.url)
+                      ? <ChevronDown className="ml-auto h-4 w-4 opacity-70" />
+                      : <ChevronRight className="ml-auto h-4 w-4 opacity-70" />
+                  )}
+                </Link>
+              ) : (
+                <a
+                  href={item.url}
+                  target={item.external ? "_blank" : undefined}
+                  rel={item.external ? "noopener noreferrer" : undefined}
+                  onClick={handleNavClick}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span className="text-base">{item.title}</span>
+                </a>
+              )}
+            </SidebarMenuButton>
+            {item.children && !collapsed && currentPath.startsWith(item.url) && (
+              <div className="overflow-hidden animate-accordion-down">
+                <ul className="ml-4 mt-1 mb-1 border-l border-sidebar-border/60 pl-2 space-y-0.5">
+                  {item.children
+                    .filter((c) => !c.adminOnly || canSeeAdmin)
+                    .map((child, idx) => {
+                      const childLocked = child.authRequired && !user;
+                      const childActive = isActive(child.url) || currentPath + location.hash === child.url;
+                      const content = (
+                        <>
+                          <child.icon className="h-4 w-4" />
+                          <span className="text-sm">{child.title}</span>
+                        </>
+                      );
+                      return (
+                        <li
+                          key={child.title}
+                          className="animate-fade-in"
+                          style={{ animationDelay: `${idx * 60}ms`, animationFillMode: "both" }}
+                        >
+                          {childLocked ? (
+                            <button
+                              onClick={() => {
+                                handleNavClick();
+                                window.location.href = "/auth";
+                              }}
+                              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm opacity-50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                            >
+                              {content}
+                            </button>
+                          ) : (
+                            <Link
+                              to={child.url}
+                              onClick={handleNavClick}
+                              className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
+                                childActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : ""
+                              }`}
+                            >
+                              {content}
+                            </Link>
+                          )}
+                        </li>
+                      );
+                    })}
+                </ul>
+              </div>
+            )}
+          </SidebarMenuItem>
+        );
+      })}
+    </SidebarMenu>
+  );
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader>
+        <div className="flex items-center justify-between px-2 py-2">
+          <Link to="/" className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden bg-sidebar-accent/30">
+              <img
+                src={bbqsLogoIcon}
+                alt="BBQS Logo"
+                className="w-full h-full object-cover scale-[1.35]"
+              />
+            </div>
+          </Link>
+          {isMobile ? (
+            <button
+              onClick={() => setOpenMobile(false)}
+              className="flex items-center gap-1 h-10 px-3 rounded-lg bg-sidebar-accent text-sidebar-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors shrink-0"
+              title="Close menu"
+              aria-label="Close menu"
+            >
+              <X className="h-5 w-5" />
+              <span className="text-xs font-semibold">Close</span>
+            </button>
+          ) : !collapsed && (
+            <div className="flex items-center gap-1 shrink-0">
+              <ThemeToggle className="h-10 w-10 rounded-lg bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-accent/80 hover:text-sidebar-foreground" />
+              <button
+                onClick={toggleSidebar}
+                className="flex items-center justify-center w-10 h-10 rounded-lg bg-sidebar-accent text-sidebar-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                title="Close sidebar"
+                aria-label="Close sidebar"
+              >
+                <PanelLeftClose className="h-5 w-5" />
+              </button>
+            </div>
+          )}
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent>
+        {sidebarGroups.map((group) => {
+          const visible = group.items.filter((item) => !item.adminOnly || canSeeAdmin);
+          if (visible.length === 0) return null;
+          return (
+            <SidebarGroup key={group.label}>
+              <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground">
+                {group.label}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>{renderMenuItems(visible)}</SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
+      </SidebarContent>
+
+      <SidebarFooter className="p-2 space-y-2">
+        {!loading && (
+          user ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={signOut}
+              className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              {!collapsed && <span>Sign Out</span>}
+            </Button>
+          ) : (
+            <Link to="/auth" onClick={handleNavClick}>
+              <Button
+                variant="default"
+                size="sm"
+                className="w-full justify-start gap-2"
+              >
+                <LogIn className="h-4 w-4" />
+                {!collapsed && <span>Sign In</span>}
+              </Button>
+            </Link>
+          )
+        )}
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
